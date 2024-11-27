@@ -246,7 +246,7 @@ class Example extends Phaser.Scene {
                     platform.setData('star', star);
                 }
 
-                if (Phaser.Math.Between(1, 100) <= 2) { 
+                if (Phaser.Math.Between(1, 100) <= 20) { 
                     platform.setTexture('ground_trap');
                     platform.setData('isTrap', true);
                 } else {
