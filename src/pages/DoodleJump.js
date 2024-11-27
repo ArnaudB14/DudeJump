@@ -379,7 +379,7 @@ class Example extends Phaser.Scene {
 
             // Ajoute un texte centré en haut
             this.trapText = this.add.text(this.cameras.main.centerX, 100, `Contrôles inversés ! : ${countdown}`, {
-                fontSize: '26px',
+                fontSize: '22px',
                 fill: '#ff0000',
                 align: 'center',
                 padding: { x: 10, y: 5 },
