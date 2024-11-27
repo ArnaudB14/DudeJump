@@ -28,6 +28,7 @@ class Example extends Phaser.Scene {
         });
         this.load.image('star', 'assets/star.png');
         this.load.image('fall', 'assets/fall.png');
+        this.load.image('arrow', 'assets/arrow.png');
     }
 
     create() {
@@ -126,18 +127,45 @@ class Example extends Phaser.Scene {
             fill: '#000',
         }).setScrollFactor(0);
 
-        // Tactile 
-        const touchZone = this.add.zone(0, 0, this.scale.width, this.scale.height)
-            .setOrigin(0)
-            .setInteractive();
+        // Button mobile
+        this.isLeftPressed = false;
+        this.isRightPressed = false;
+        this.isJumpPressed = false;
 
-        touchZone.on('pointerdown', (pointer) => {
-            this.handleTouch(pointer);
+        const leftButton = this.add.image(75, this.scale.height - 50, 'arrow')
+            .setInteractive()
+            .setScrollFactor(0)
+            .setOrigin(0.5)
+            .setScale(1)
+            .setAlpha(0.8);
+        leftButton.setFlipX(true); // Inverse horizontalement pour la flèche gauche
+
+        // Bouton droit
+        const rightButton = this.add.image(this.scale.width - 75, this.scale.height - 50, 'arrow')
+            .setInteractive()
+            .setScrollFactor(0)
+            .setOrigin(0.5)
+            .setScale(1)
+            .setAlpha(0.8);
+
+
+        // Événements pour le bouton gauche
+        leftButton.on('pointerdown', () => {
+            this.isLeftPressed = true;
+        });
+        leftButton.on('pointerup', () => {
+            this.isLeftPressed = false;
         });
 
-        touchZone.on('pointermove', (pointer) => {
-            this.handleTouch(pointer);
+        // Événements pour le bouton droit
+        rightButton.on('pointerdown', () => {
+            this.isRightPressed = true;
         });
+        rightButton.on('pointerup', () => {
+            this.isRightPressed = false;
+        });
+
+
 
         maxY = player.y;
     }
@@ -158,13 +186,13 @@ class Example extends Phaser.Scene {
             // Overlay semi-transparent
             const overlay = this.add.graphics();
             overlay.fillStyle(0x000000, 0.5);
-            overlay.fillRect(0, 0, 500, 700); // Taille ajustée
+            overlay.fillRect(0, 0, this.scale.width, this.scale.height);
             overlay.setScrollFactor(0);
 
             // Texte "GAME OVER"
             this.add
-                .text(250, 200, 'GAME OVER', {
-                    fontSize: '48px',
+                .text(this.scale.width / 2, this.scale.height / 2 - 100, 'GAME OVER', {
+                    fontSize: `${this.scale.width / 10}px`, // Taille de police adaptative
                     fill: '#fff',
                 })
                 .setOrigin(0.5, 0.5)
@@ -181,8 +209,8 @@ class Example extends Phaser.Scene {
             });
 
             this.add
-                .text(250, 300, scoreText, {
-                    fontSize: '24px',
+                .text(this.scale.width / 2, this.scale.height / 2, scoreText, {
+                    fontSize: `${this.scale.width / 20}px`, // Taille de police adaptative
                     fill: '#fff',
                 })
                 .setOrigin(0.5, 0.5)
@@ -190,8 +218,8 @@ class Example extends Phaser.Scene {
 
             // Bouton "Restart"
             const restartButton = this.add
-                .text(250, 500, 'Restart', {
-                    fontSize: '28px',
+                .text(this.scale.width / 2, this.scale.height / 2 + 150, 'Restart', {
+                    fontSize: `${this.scale.width / 15}px`, // Taille de police adaptative
                     fill: '#fff',
                     backgroundColor: '#000',
                     padding: { x: 10, y: 5 },
@@ -300,7 +328,14 @@ class Example extends Phaser.Scene {
             player.anims.play('turn');
         }
 
-        if (player.body.velocity.x === 0) {
+        if (this.isLeftPressed) {
+            player.setVelocityX(this.isControlsReversed ? 260 : -260);
+            player.anims.play('left', true);
+        } else if (this.isRightPressed) {
+            player.setVelocityX(this.isControlsReversed ? -260 : 260);
+            player.anims.play('right', true);
+        } else {
+            player.setVelocityX(0);
             player.anims.play('turn');
         }
 
@@ -329,20 +364,6 @@ class Example extends Phaser.Scene {
         }
     }
 
-    handleTouch(pointer) {
-        const touchX = pointer.x;
-    
-        if (touchX < player.x) {
-            // Déplacer à gauche
-            player.setVelocityX(-260); // Ajustez la vitesse selon vos besoins
-            player.anims.play('left', true);
-        } else if (touchX > player.x) {
-            // Déplacer à droite
-            player.setVelocityX(260); // Ajustez la vitesse selon vos besoins
-            player.anims.play('right', true);
-        }
-    }
-    
     activateTrapEffect() {
         const effectDuration = 5; // Durée en secondes
         let countdown = effectDuration;
