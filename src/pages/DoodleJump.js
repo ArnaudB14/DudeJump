@@ -10,23 +10,30 @@ var scoreText;
 var maxY;
 var gameOver;
 var boosts;
+var stars;
+var bonusScore = 0;
 
 class Example extends Phaser.Scene {
     preload() {
         this.load.image('sky', 'assets/sky.png');
         this.load.image('ground', 'assets/platform.png');
+        this.load.image('ground_trap', 'assets/platform_trap.png');
         this.load.spritesheet('dude',
             'assets/player.png',
-            { frameWidth: 42, frameHeight: 42 }
+            { frameWidth: 32, frameHeight: 32 }
         );
         this.load.spritesheet('jump', 'assets/jump.png', {
             frameWidth: 48, // Largeur d'un frame
             frameHeight: 48, // Hauteur d'un frame
         });
+        this.load.image('star', 'assets/star.png');
+        this.load.image('fall', 'assets/fall.png');
     }
 
     create() {
         gameOver = false;
+
+        this.isControlsReversed = false;
 
         // Arrière-plan ajusté pour la nouvelle taille
         this.add.image(250, 350, 'sky').setScrollFactor(0).setDisplaySize(500, 700); // Centré sur 500x700
@@ -55,7 +62,14 @@ class Example extends Phaser.Scene {
         // Joueur
         player = this.physics.add.sprite(250, 600, 'dude').setScale(1.75); // Centré horizontalement
 
+        this.fallImage = this.add.image(250, 600, 'fall').setScale(1.75);;
+        this.fallImage.setVisible(false);
+
         boosts = this.physics.add.group();
+
+        stars = this.physics.add.group();
+
+        this.physics.add.overlap(player, stars, this.collectStar, null, this);
 
         // Configuration du joueur
         player.setCollideWorldBounds(false);
@@ -67,33 +81,33 @@ class Example extends Phaser.Scene {
         // Animations
         this.anims.create({
             key: 'left',
-            frames: this.anims.generateFrameNumbers('dude', { start: 0, end: 4 }),
+            frames: this.anims.generateFrameNumbers('dude', { start: 0, end: 11 }),
             frameRate: 10,
             repeat: -1,
         });
 
         this.anims.create({
             key: 'turn',
-            frames: [{ key: 'dude', frame: 7 }],
+            frames: [{ key: 'dude', frame: 15 }],
             frameRate: 20,
         });
 
         this.anims.create({
             key: 'right',
-            frames: this.anims.generateFrameNumbers('dude', { start: 7, end: 11 }),
+            frames: this.anims.generateFrameNumbers('dude', { start: 12, end: 23 }),
             frameRate: 10,
             repeat: -1,
         });
 
         this.anims.create({
-            key: 'boost',
+            key: 'boost-hit',
             frames: this.anims.generateFrameNumbers('jump', { start: 0, end: 5 }),
-            frameRate: 10,
+            frameRate: 15,
             repeat: 0, // L'animation ne se répète pas
         });
 
         // Collision entre joueur et plateformes
-        this.physics.add.collider(player, platforms);
+        this.physics.add.collider(player, platforms, this.checkPlatform, null, this);
 
         this.physics.add.overlap(player, boosts, this.hitBoost, null, this);
 
@@ -208,16 +222,36 @@ class Example extends Phaser.Scene {
                     platform.getData('boost').destroy();
                     platform.setData('boost', null);
                 }
+
+                if (platform.getData('star')) {
+                    platform.getData('star').destroy();
+                    platform.setData('star', null);
+                }
         
-                // Ajouter un boost avec une probabilité de 10 %
-                if (Phaser.Math.Between(1, 20) === 1) {
+                // Ajouter un boost avec une probabilité de 5 %
+                if (Phaser.Math.Between(1, 100) <= 2) {
                     const boost = boosts.create(platform.x, platform.y - 45, 'jump');
                     boost.setScale(1.5);
-                    boost.play('boost');
                     boost.body.allowGravity = false;
                     boost.body.immovable = true;
         
                     platform.setData('boost', boost);
+                }
+
+                if (Phaser.Math.Between(1, 100) <= 2) {
+                    const star = stars.create(platform.x, platform.y - 35, 'star');
+                    star.body.allowGravity = false;
+                    star.body.immovable = true;
+        
+                    platform.setData('star', star);
+                }
+
+                if (Phaser.Math.Between(1, 100) <= 2) { 
+                    platform.setTexture('ground_trap');
+                    platform.setData('isTrap', true);
+                } else {
+                    platform.setTexture('ground');
+                    platform.setData('isTrap', false);
                 }
         
                 // Mettre à jour la dernière plateforme
@@ -241,10 +275,10 @@ class Example extends Phaser.Scene {
         }
 
         if (cursors.left.isDown) {
-            player.setVelocityX(-260);
+            player.setVelocityX(this.isControlsReversed ? 260 : -260); // Commandes inversées
             player.anims.play('left', true);
         } else if (cursors.right.isDown) {
-            player.setVelocityX(260);
+            player.setVelocityX(this.isControlsReversed ? -260 : 260); // Commandes inversées
             player.anims.play('right', true);
         } else {
             player.setVelocityX(0);
@@ -253,20 +287,91 @@ class Example extends Phaser.Scene {
 
         if (player.y < maxY) {
             maxY = player.y;
-            score = Math.abs(Math.floor((700 - maxY) / 10));
+            const heightScore = Math.abs(Math.floor((700 - maxY) / 10));
+            score = heightScore + bonusScore;
             scoreText.setText('Score: ' + score);
+        }
+
+        if (player.body.velocity.y > 50) { // Le joueur tombe
+            this.fallImage.setVisible(true);
+            this.fallImage.setPosition(player.x, player.y); // Suit la position du joueur
+            player.setVisible(false); // Cache le joueur si nécessaire
+        } else {
+            this.fallImage.setVisible(false);
+            player.setVisible(true); // Affiche le joueur normalement
+        }
+        
+    }
+
+    checkPlatform(player, platform) {
+        if (platform.getData('isTrap')) {
+            console.log('Trap activated!'); // Vérifie que ce message s’affiche dans la console
+            this.activateTrapEffect();
         }
     }
 
+    activateTrapEffect() {
+        const effectDuration = 5; // Durée en secondes
+        let countdown = effectDuration;
+    
+        // Si les commandes sont déjà inversées
+        if (this.isControlsReversed) {
+            // Réinitialise le décompte et le texte existant
+            this.countdownEvent.remove(); // Supprime l'ancien événement
+            this.trapText.setText(`Contrôles inversés ! : ${countdown}`); // Remet le texte à jour
+        } else {
+            // Première activation des commandes inversées
+            this.isControlsReversed = true;
+    
+            // Ajoute un texte centré en haut
+            this.trapText = this.add.text(this.cameras.main.centerX, 100, `Contrôles inversés ! : ${countdown}`, {
+                fontSize: '26px',
+                fill: '#ff0000',
+                align: 'center',
+                padding: { x: 10, y: 5 },
+            }).setOrigin(0.5).setScrollFactor(0);
+        }
+    
+        // Crée un événement pour le décompte
+        this.countdownEvent = this.time.addEvent({
+            delay: 1000, // Répète toutes les secondes
+            callback: () => {
+                countdown--; // Diminue le décompte
+                this.trapText.setText(`Contrôles inversés ! : ${countdown}`); // Met à jour le texte
+    
+                // Si le décompte atteint 0, arrête l'effet
+                if (countdown <= 0) {
+                    this.countdownEvent.remove(); // Supprime l'événement
+                    this.trapText.destroy(); // Supprime le texte
+                    this.isControlsReversed = false; // Réinitialise les commandes
+                }
+            },
+            loop: true, // Répète l'événement
+        });
+    }
+     
+    
 
     hitBoost(player, boost) {
         player.setVelocityY(-1300); // Augmenter la hauteur du saut
+        boost.play('boost-hit');
+        boost.on('animationcomplete', () => {
+            boost.disableBody(true, true);
+        });
         boost.disableBody(true, true);
         player.isBoosting = true; // Nouveau flag pour détecter le boost
         this.time.delayedCall(200, () => {
             player.isBoosting = false; // Réinitialiser après 200ms
         });
     }
+
+    collectStar(player, star) {
+        star.disableBody(true, true);
+        bonusScore += 100; // Ajoute les points au score bonus
+        score = Math.abs(Math.floor((700 - maxY) / 10)) + bonusScore; // Mets à jour le score global
+        scoreText.setText('Score: ' + score);
+    }
+    
 
     updateHighScores(newScore) {
         // Récupérer les scores existants
