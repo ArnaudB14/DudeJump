@@ -272,7 +272,7 @@ class Example extends Phaser.Scene {
                 }
 
                 // Ajouter un boost avec une probabilité de 5 %
-                if (Phaser.Math.Between(1, 100) <= 2) {
+                if (Phaser.Math.Between(1, 100) <= 1) {
                     const boost = boosts.create(platform.x, platform.y - 45, 'jump');
                     boost.setScale(1.5);
                     boost.body.allowGravity = false;
@@ -281,7 +281,7 @@ class Example extends Phaser.Scene {
                     platform.setData('boost', boost);
                 }
 
-                if (Phaser.Math.Between(1, 100) <= 2) {
+                if (Phaser.Math.Between(1, 100) <= 1) {
                     const star = stars.create(platform.x, platform.y - 35, 'star');
                     star.body.allowGravity = false;
                     star.body.immovable = true;
@@ -289,7 +289,7 @@ class Example extends Phaser.Scene {
                     platform.setData('star', star);
                 }
 
-                if (Phaser.Math.Between(1, 100) <= 20) {
+                if (Phaser.Math.Between(1, 100) <= 1) {
                     platform.setTexture('ground_trap');
                     platform.setData('isTrap', true);
                 } else {
