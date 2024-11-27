@@ -14,6 +14,13 @@ var stars;
 var bonusScore = 0;
 
 class Example extends Phaser.Scene {
+
+    init(data) {
+        // Charge l'apparence depuis localStorage ou utilise 'dude' par défaut
+        this.currentAppearance = data.appearance || localStorage.getItem('playerAppearance') || 'dude';
+    }
+
+
     preload() {
         this.load.image('sky', 'assets/sky.png');
         this.load.image('ground', 'assets/platform.png');
@@ -22,16 +29,36 @@ class Example extends Phaser.Scene {
             'assets/player.png',
             { frameWidth: 32, frameHeight: 32 }
         );
+        this.load.spritesheet('dude2',
+            'assets/player2.png',
+            { frameWidth: 42, frameHeight: 42 }
+        );
+        this.load.spritesheet('dude3',
+            'assets/player3.png',
+            { frameWidth: 32, frameHeight: 48 }
+        );
+        this.load.spritesheet('dude4',
+            'assets/player4.png',
+            { frameWidth: 32, frameHeight: 32 }
+        );
+        this.load.spritesheet('dude5',
+            'assets/player5.png',
+            { frameWidth: 32, frameHeight: 32 }
+        );
         this.load.spritesheet('jump', 'assets/jump.png', {
             frameWidth: 48, // Largeur d'un frame
             frameHeight: 48, // Hauteur d'un frame
         });
         this.load.image('star', 'assets/star.png');
         this.load.image('fall', 'assets/fall.png');
+        this.load.image('fall4', 'assets/fall4.png');
+        this.load.image('fall5', 'assets/fall5.png');
         this.load.image('arrow', 'assets/arrow.png');
     }
 
     create() {
+
+        // Supprimer les animations existantes
         gameOver = false;
 
         this.isControlsReversed = false;
@@ -45,7 +72,7 @@ class Example extends Phaser.Scene {
         platforms = this.physics.add.staticGroup();
 
         const ground = platforms.create(this.scale.width / 2, this.scale.height - 10, 'ground');
-        ground.setScale(1.5, 0.6); // Ajuster la taille visuellement
+        ground.setScale(1.5, 0.5); // Ajuster la taille visuellement
         ground.body.updateFromGameObject();
 
         let lastPlatformY = 600;
@@ -56,17 +83,23 @@ class Example extends Phaser.Scene {
             const y = lastPlatformY - Phaser.Math.Between(120, 200);// Espacement vertical ajusté pour 700px de hauteur
 
             const platform = platforms.create(x, y, 'ground');
-            platform.setScale(0.25, 0.6).refreshBody(); // Ajuste la taille des plateformes
+            platform.setScale(0.21, 0.6).refreshBody(); // Ajuste la taille des plateformes
             platform.body.updateFromGameObject();
 
             lastPlatformY = y;
         }
 
         // Joueur
-        player = this.physics.add.sprite(this.scale.width / 2, this.scale.height - 100, 'dude').setScale(1.75); // Centré horizontalement
+        player = this.physics.add.sprite(this.scale.width / 2, this.scale.height - 100, this.currentAppearance).setScale(1.75);
 
         this.fallImage = this.add.image(250, 600, 'fall').setScale(1.75);;
         this.fallImage.setVisible(false);
+
+        this.fallImage4 = this.add.image(250, 600, 'fall4').setScale(1.75);;
+        this.fallImage4.setVisible(false);
+
+        this.fallImage5 = this.add.image(250, 600, 'fall5').setScale(1.75);;
+        this.fallImage5.setVisible(false);
 
         boosts = this.physics.add.group();
 
@@ -80,27 +113,61 @@ class Example extends Phaser.Scene {
         player.body.checkCollision.left = false;
         player.body.checkCollision.right = false;
 
+        const animationFrames = {
+            dude: {
+                left: { start: 0, end: 11 },
+                turn: { frame: 15 },
+                right: { start: 12, end: 23 },
+            },
+            dude2: {
+                left: { start: 0, end: 4 },
+                turn: { frame: 8 },
+                right: { start: 7, end: 11 },
+            },
+            dude3: {
+                left: { start: 0, end: 3 }, // Ajustez selon les frames disponibles pour `dude3`
+                turn: { frame: 4 },
+                right: { start: 5, end: 8 },
+            },
+            dude4: {
+                left: { start: 0, end: 11 },
+                turn: { frame: 15 },
+                right: { start: 12, end: 23 },
+            },
+            dude5: {
+                left: { start: 0, end: 11 },
+                turn: { frame: 15 },
+                right: { start: 12, end: 23 },
+            },
+        };
+        
+        // Génération d'animations dynamiques en fonction de l'apparence
+        const currentFrames = animationFrames[this.currentAppearance];
 
-        // Animations
+        this.anims.remove('left');
+        this.anims.remove('right');
+        this.anims.remove('turn');
+        
         this.anims.create({
             key: 'left',
-            frames: this.anims.generateFrameNumbers('dude', { start: 0, end: 11 }),
+            frames: this.anims.generateFrameNumbers(this.currentAppearance, { start: currentFrames.left.start, end: currentFrames.left.end }),
             frameRate: 10,
             repeat: -1,
         });
-
+        
         this.anims.create({
             key: 'turn',
-            frames: [{ key: 'dude', frame: 15 }],
+            frames: [{ key: this.currentAppearance, frame: currentFrames.turn.frame }],
             frameRate: 20,
         });
-
+        
         this.anims.create({
             key: 'right',
-            frames: this.anims.generateFrameNumbers('dude', { start: 12, end: 23 }),
+            frames: this.anims.generateFrameNumbers(this.currentAppearance, { start: currentFrames.right.start, end: currentFrames.right.end }),
             frameRate: 10,
             repeat: -1,
         });
+
 
         this.anims.create({
             key: 'boost-hit',
@@ -108,6 +175,7 @@ class Example extends Phaser.Scene {
             frameRate: 15,
             repeat: 0, // L'animation ne se répète pas
         });
+
 
         // Collision entre joueur et plateformes
         this.physics.add.collider(player, platforms, this.checkPlatform, null, this);
@@ -180,7 +248,7 @@ class Example extends Phaser.Scene {
         // GAME OVER
         if (player.y > bottomPlatform.y + 200 && !gameOver) {
             gameOver = true;
-            player.setTint(0xff0000);
+            player.setVisible(false);
             player.anims.stop();
 
             // Overlay semi-transparent
@@ -190,13 +258,10 @@ class Example extends Phaser.Scene {
             overlay.setScrollFactor(0);
 
             // Texte "GAME OVER"
-            this.add
-                .text(this.scale.width / 2, this.scale.height / 2 - 100, 'GAME OVER', {
-                    fontSize: `${this.scale.width / 10}px`, // Taille de police adaptative
-                    fill: '#fff',
-                })
-                .setOrigin(0.5, 0.5)
-                .setScrollFactor(0);
+            const gameOverText = this.add.text(this.scale.width / 2, this.scale.height / 2 - 100, 'GAME OVER', {
+                fontSize: `${this.scale.width / 10}px`, // Taille de police adaptative
+                fill: '#fff',
+            }).setOrigin(0.5, 0.5).setScrollFactor(0);
 
             // Mettre à jour les meilleurs scores
             this.updateHighScores(score);
@@ -208,13 +273,11 @@ class Example extends Phaser.Scene {
                 scoreText += `${index + 1}. ${highScore}\n`;
             });
 
-            this.add
-                .text(this.scale.width / 2, this.scale.height / 2, scoreText, {
-                    fontSize: `${this.scale.width / 20}px`, // Taille de police adaptative
-                    fill: '#fff',
-                })
-                .setOrigin(0.5, 0.5)
-                .setScrollFactor(0);
+            const highScoresText = this.add.text(this.scale.width / 2, this.scale.height / 2, scoreText, {
+                fontSize: `${this.scale.width / 20}px`,
+                fill: '#fff',
+            }).setOrigin(0.5, 0.5).setScrollFactor(0);
+
 
             // Bouton "Restart"
             const restartButton = this.add
@@ -222,23 +285,147 @@ class Example extends Phaser.Scene {
                     fontSize: `${this.scale.width / 15}px`, // Taille de police adaptative
                     fill: '#fff',
                     backgroundColor: '#000',
-                    padding: { x: 10, y: 5 },
+                    padding: { x: 5, y: 5 },
                 })
                 .setOrigin(0.5, 0.5)
                 .setScrollFactor(0);
 
             restartButton.setInteractive({ useHandCursor: true });
             restartButton.on('pointerover', () => {
-                restartButton.setStyle({ fill: 'red' });
+                restartButton.setStyle({ fill: 'lightgrey' });
             });
             restartButton.on('pointerout', () => {
                 restartButton.setStyle({ fill: '#fff' });
             });
             restartButton.on('pointerdown', () => {
-                this.scene.restart();
+                this.scene.restart({ appearance: this.currentAppearance });
                 score = 0;
                 gameOver = false;
             });
+
+
+
+            // Bouton "Changer d'apparence"
+            const changeAppearanceButton = this.add
+                .text(this.scale.width / 2, this.scale.height / 2 + 200, 'Changer d\'apparence', {
+                    fontSize: `${this.scale.width / 20}px`, // Taille de police adaptative
+                    fill: '#fff',
+                    backgroundColor: '#000',
+                    padding: { x: 10, y: 5 },
+                })
+                .setOrigin(0.5, 0.5)
+                .setScrollFactor(0);
+
+            changeAppearanceButton.setInteractive({ useHandCursor: true });
+            changeAppearanceButton.on('pointerover', () => {
+                changeAppearanceButton.setStyle({ fill: 'lightgrey' });
+            });
+            changeAppearanceButton.on('pointerout', () => {
+                changeAppearanceButton.setStyle({ fill: '#fff' });
+            });
+            changeAppearanceButton.on('pointerdown', () => {
+                // Supprimer les éléments de Game Over
+                overlay.clear();
+                gameOverText.setVisible(false);
+                highScoresText.setVisible(false);
+                restartButton.setVisible(false);
+                changeAppearanceButton.setVisible(false);
+
+                // Créer l'overlay pour le carrousel
+                const overlayCarousel = this.add.graphics();
+                overlayCarousel.fillStyle(0x000000, 0.5);
+                overlayCarousel.fillRect(0, 0, this.scale.width, this.scale.height);
+                overlayCarousel.setScrollFactor(0);
+
+                const characterFrames = {
+                    dude: 15,
+                    dude2: 8, 
+                    dude3: 4,
+                    dude4: 15,
+                    dude5: 15
+                };
+
+                // Titre pour le carrousel
+                const carouselText = this.add.text(this.scale.width / 2, 200, 'APPARENCE', {
+                    fontSize: `${this.scale.width / 10}px`, // Taille de police adaptative
+                    fill: '#fff',
+                }).setOrigin(0.5, 0.5).setScrollFactor(0);
+
+                // Liste des personnages disponibles
+                const characterOptions = ['dude', 'dude2', 'dude3', 'dude4', 'dude5'];
+                let currentIndex = characterOptions.indexOf(this.currentAppearance);
+
+                // Sprite du personnage actuel
+                const characterImage = this.add.sprite(
+                    this.scale.width / 2,
+                    this.scale.height / 2,
+                    characterOptions[currentIndex], // Le personnage actuel
+                    characterFrames[characterOptions[currentIndex]] // La frame à afficher
+                ).setScale(2).setScrollFactor(0).setDepth(101);
+
+                // Flèche gauche pour naviguer
+                const leftArrow = this.add.text(this.scale.width / 4, this.scale.height / 2, '<', {
+                    fontSize: '40px',
+                    fill: '#ffffff',
+                }).setOrigin(0.5).setScrollFactor(0).setDepth(101);
+                leftArrow.setInteractive({ useHandCursor: true });
+                leftArrow.on('pointerdown', () => {
+                    currentIndex = (currentIndex - 1 + characterOptions.length) % characterOptions.length;
+                    characterImage.setTexture(characterOptions[currentIndex]);
+                    characterImage.setFrame(characterFrames[characterOptions[currentIndex]]); // Mise à jour de la frame
+                });
+
+                // Flèche droite pour naviguer
+                const rightArrow = this.add.text((this.scale.width / 4) * 3, this.scale.height / 2, '>', {
+                    fontSize: '40px',
+                    fill: '#ffffff',
+                }).setOrigin(0.5).setScrollFactor(0).setDepth(101);
+                rightArrow.setInteractive({ useHandCursor: true });
+                rightArrow.on('pointerdown', () => {
+                    currentIndex = (currentIndex + 1) % characterOptions.length;
+                    characterImage.setTexture(characterOptions[currentIndex]);
+                    characterImage.setFrame(characterFrames[characterOptions[currentIndex]]); // Mise à jour de la frame
+                });
+
+                // Bouton Valider
+                const validateButton = this.add.text(this.scale.width / 2, this.scale.height - 100, 'VALIDER', {
+                    fontSize: '24px',
+                    fill: '#ffffff',
+                    backgroundColor: '#000000',
+                    padding: { x: 10, y: 5 },
+                }).setOrigin(0.5).setScrollFactor(0).setDepth(101);
+
+                validateButton.setInteractive({ useHandCursor: true });
+                validateButton.on('pointerover', () => {
+                    validateButton.setStyle({ fill: 'lightgrey' });
+                });
+                validateButton.on('pointerout', () => {
+                    validateButton.setStyle({ fill: '#fff' });
+                });
+
+                validateButton.on('pointerdown', () => {
+                    // Sauvegarder l'apparence sélectionnée
+                    this.currentAppearance = characterOptions[currentIndex];
+                    localStorage.setItem('playerAppearance', this.currentAppearance);
+
+                    // Détruire les éléments du carousel
+                    overlayCarousel.destroy();
+                    carouselText.destroy();
+                    characterImage.destroy();
+                    leftArrow.destroy();
+                    rightArrow.destroy();
+                    validateButton.destroy();
+
+                    // Réafficher les éléments de Game Over
+                    overlay.fillStyle(0x000000, 0.5);
+                    overlay.fillRect(0, 0, this.scale.width, this.scale.height);
+                    gameOverText.setVisible(true);
+                    highScoresText.setVisible(true);
+                    restartButton.setVisible(true);
+                    changeAppearanceButton.setVisible(true);
+                });
+            });
+
         }
 
         let lastPlatformY = null;
@@ -258,7 +445,7 @@ class Example extends Phaser.Scene {
 
                 platform.y = newY;
                 platform.x = newX;
-                platform.setScale(0.25, 0.6).refreshBody();
+                platform.setScale(0.21, 0.6).refreshBody();
 
                 // Supprimer le boost s'il existe
                 if (platform.getData('boost')) {
@@ -326,7 +513,7 @@ class Example extends Phaser.Scene {
             player.anims.play('right', true);
         } else {
             player.setVelocityX(0);
-            player.anims.play('turn');
+            player.anims.play('turn'); // Appelle la version correcte selon l'apparence
         }
 
         // Gestion du saut
@@ -342,20 +529,43 @@ class Example extends Phaser.Scene {
             scoreText.setText('Score: ' + score);
         }
 
-        if (player.body.velocity.y > 50) { // Le joueur tombe
-            this.fallImage.setVisible(true);
-            this.fallImage.setPosition(player.x, player.y); // Suit la position du joueur
-            player.setVisible(false); // Cache le joueur si nécessaire
-        } else {
-            this.fallImage.setVisible(false);
-            player.setVisible(true); // Affiche le joueur normalement
+        if (this.currentAppearance === 'dude') {
+            if (player.body.velocity.y > 50) { // Si le joueur tombe
+                this.fallImage.setVisible(true);
+                this.fallImage.setPosition(player.x, player.y); // Suivre la position du joueur
+                player.setVisible(false); // Masquer le joueur
+            } else {
+                this.fallImage.setVisible(false);
+                player.setVisible(true); // Rendre le joueur visible à nouveau
+            }
+        }
+
+        if (this.currentAppearance === 'dude4') {
+            if (player.body.velocity.y > 50) { // Si le joueur tombe
+                this.fallImage4.setVisible(true);
+                this.fallImage4.setPosition(player.x, player.y); // Suivre la position du joueur
+                player.setVisible(false); // Masquer le joueur
+            } else {
+                this.fallImage4.setVisible(false);
+                player.setVisible(true); // Rendre le joueur visible à nouveau
+            }
+        }
+
+        if (this.currentAppearance === 'dude5') {
+            if (player.body.velocity.y > 50) { // Si le joueur tombe
+                this.fallImage5.setVisible(true);
+                this.fallImage5.setPosition(player.x, player.y); // Suivre la position du joueur
+                player.setVisible(false); // Masquer le joueur
+            } else {
+                this.fallImage5.setVisible(false);
+                player.setVisible(true); // Rendre le joueur visible à nouveau
+            }
         }
 
     }
 
     checkPlatform(player, platform) {
         if (platform.getData('isTrap')) {
-            console.log('Trap activated!'); // Vérifie que ce message s’affiche dans la console
             this.activateTrapEffect();
         }
     }
