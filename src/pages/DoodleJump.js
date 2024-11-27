@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import Phaser from 'phaser';
 import GameComponent from '../components/GameComponent';
 
@@ -36,13 +36,15 @@ class Example extends Phaser.Scene {
         this.isControlsReversed = false;
 
         // Arrière-plan ajusté pour la nouvelle taille
-        this.add.image(250, 350, 'sky').setScrollFactor(0).setDisplaySize(500, 700); // Centré sur 500x700
+        this.add.image(this.scale.width / 2, this.scale.height / 2, 'sky')
+            .setScrollFactor(0)
+            .setDisplaySize(this.scale.width, this.scale.height); // Centré sur 500x700
 
         // Plateformes dynamiques
         platforms = this.physics.add.staticGroup();
 
-        const ground = platforms.create(250, 690, 'ground'); // Centré en bas
-        ground.setScale(1.5, 0.6); // Ajuste la largeur du sol
+        const ground = platforms.create(this.scale.width / 2, this.scale.height - 10, 'ground');
+        ground.setScale(1.5, 0.6); // Ajuster la taille visuellement
         ground.body.updateFromGameObject();
 
         let lastPlatformY = 600;
@@ -60,7 +62,7 @@ class Example extends Phaser.Scene {
         }
 
         // Joueur
-        player = this.physics.add.sprite(250, 600, 'dude').setScale(1.75); // Centré horizontalement
+        player = this.physics.add.sprite(this.scale.width / 2, this.scale.height - 100, 'dude').setScale(1.75); // Centré horizontalement
 
         this.fallImage = this.add.image(250, 600, 'fall').setScale(1.75);;
         this.fallImage.setVisible(false);
@@ -123,6 +125,19 @@ class Example extends Phaser.Scene {
             fontSize: '24px',
             fill: '#000',
         }).setScrollFactor(0);
+
+        // Tactile 
+        const touchZone = this.add.zone(0, 0, this.scale.width, this.scale.height)
+            .setOrigin(0)
+            .setInteractive();
+
+        touchZone.on('pointerdown', (pointer) => {
+            this.handleTouch(pointer);
+        });
+
+        touchZone.on('pointermove', (pointer) => {
+            this.handleTouch(pointer);
+        });
 
         maxY = player.y;
     }
@@ -204,19 +219,19 @@ class Example extends Phaser.Scene {
         platforms.children.iterate((child) => {
             const platform = child;
             const scrollY = this.cameras.main.scrollY;
-        
+
             if (platform.y >= scrollY + 700) {
                 // Positionnement contrôlé
                 const newY = lastPlatformY
                     ? lastPlatformY - Phaser.Math.Between(120, 200) // Espacement vertical contrôlé
                     : scrollY - Phaser.Math.Between(120, 200);
-        
+
                 const newX = Phaser.Math.Between(100, 400); // Limite horizontale
-        
+
                 platform.y = newY;
                 platform.x = newX;
                 platform.setScale(0.25, 0.6).refreshBody();
-        
+
                 // Supprimer le boost s'il existe
                 if (platform.getData('boost')) {
                     platform.getData('boost').destroy();
@@ -227,14 +242,14 @@ class Example extends Phaser.Scene {
                     platform.getData('star').destroy();
                     platform.setData('star', null);
                 }
-        
+
                 // Ajouter un boost avec une probabilité de 5 %
                 if (Phaser.Math.Between(1, 100) <= 2) {
                     const boost = boosts.create(platform.x, platform.y - 45, 'jump');
                     boost.setScale(1.5);
                     boost.body.allowGravity = false;
                     boost.body.immovable = true;
-        
+
                     platform.setData('boost', boost);
                 }
 
@@ -242,18 +257,18 @@ class Example extends Phaser.Scene {
                     const star = stars.create(platform.x, platform.y - 35, 'star');
                     star.body.allowGravity = false;
                     star.body.immovable = true;
-        
+
                     platform.setData('star', star);
                 }
 
-                if (Phaser.Math.Between(1, 100) <= 20) { 
+                if (Phaser.Math.Between(1, 100) <= 20) {
                     platform.setTexture('ground_trap');
                     platform.setData('isTrap', true);
                 } else {
                     platform.setTexture('ground');
                     platform.setData('isTrap', false);
                 }
-        
+
                 // Mettre à jour la dernière plateforme
                 lastPlatformY = platform.y;
             } else if (lastPlatformY === null || platform.y < lastPlatformY) {
@@ -285,6 +300,10 @@ class Example extends Phaser.Scene {
             player.anims.play('turn');
         }
 
+        if (player.body.velocity.x === 0) {
+            player.anims.play('turn');
+        }
+
         if (player.y < maxY) {
             maxY = player.y;
             const heightScore = Math.abs(Math.floor((700 - maxY) / 10));
@@ -300,7 +319,7 @@ class Example extends Phaser.Scene {
             this.fallImage.setVisible(false);
             player.setVisible(true); // Affiche le joueur normalement
         }
-        
+
     }
 
     checkPlatform(player, platform) {
@@ -310,10 +329,24 @@ class Example extends Phaser.Scene {
         }
     }
 
+    handleTouch(pointer) {
+        const touchX = pointer.x;
+    
+        if (touchX < player.x) {
+            // Déplacer à gauche
+            player.setVelocityX(-260); // Ajustez la vitesse selon vos besoins
+            player.anims.play('left', true);
+        } else if (touchX > player.x) {
+            // Déplacer à droite
+            player.setVelocityX(260); // Ajustez la vitesse selon vos besoins
+            player.anims.play('right', true);
+        }
+    }
+    
     activateTrapEffect() {
         const effectDuration = 5; // Durée en secondes
         let countdown = effectDuration;
-    
+
         // Si les commandes sont déjà inversées
         if (this.isControlsReversed) {
             // Réinitialise le décompte et le texte existant
@@ -322,7 +355,7 @@ class Example extends Phaser.Scene {
         } else {
             // Première activation des commandes inversées
             this.isControlsReversed = true;
-    
+
             // Ajoute un texte centré en haut
             this.trapText = this.add.text(this.cameras.main.centerX, 100, `Contrôles inversés ! : ${countdown}`, {
                 fontSize: '26px',
@@ -331,14 +364,14 @@ class Example extends Phaser.Scene {
                 padding: { x: 10, y: 5 },
             }).setOrigin(0.5).setScrollFactor(0);
         }
-    
+
         // Crée un événement pour le décompte
         this.countdownEvent = this.time.addEvent({
             delay: 1000, // Répète toutes les secondes
             callback: () => {
                 countdown--; // Diminue le décompte
                 this.trapText.setText(`Contrôles inversés ! : ${countdown}`); // Met à jour le texte
-    
+
                 // Si le décompte atteint 0, arrête l'effet
                 if (countdown <= 0) {
                     this.countdownEvent.remove(); // Supprime l'événement
@@ -349,8 +382,8 @@ class Example extends Phaser.Scene {
             loop: true, // Répète l'événement
         });
     }
-     
-    
+
+
 
     hitBoost(player, boost) {
         player.setVelocityY(-1300); // Augmenter la hauteur du saut
@@ -371,7 +404,7 @@ class Example extends Phaser.Scene {
         score = Math.abs(Math.floor((700 - maxY) / 10)) + bonusScore; // Mets à jour le score global
         scoreText.setText('Score: ' + score);
     }
-    
+
 
     updateHighScores(newScore) {
         // Récupérer les scores existants
@@ -410,26 +443,61 @@ class Example extends Phaser.Scene {
 }
 
 const Home = () => {
-    const config = {
-        type: Phaser.AUTO,
-        parent: 'phaser-container',
-        width: 500,
-        height: 700,
-        scene: Example,
-        physics: {
-            default: 'arcade',
-            arcade: {
-                gravity: { y: 600 },
-                debug: false
-            }
-        },
+    const gameRef = useRef(null); // Référence locale pour le jeu
+
+    // Fonction pour calculer la taille du jeu
+    const calculateGameSize = () => {
+        const maxWidth = 500;
+        const maxHeight = 700;
+        const width = Math.min(window.innerWidth, maxWidth);
+        const height = Math.min(window.innerHeight, maxHeight);
+        return { width, height };
     };
 
-    return (
-        <div>
-            <GameComponent config={config} />
-        </div>
-    );
+    useEffect(() => {
+        // Calculez la taille initiale du jeu
+        const { width, height } = calculateGameSize();
+
+        // Configuration Phaser
+        const config = {
+            type: Phaser.AUTO,
+            parent: 'phaser-container',
+            width: width,
+            height: height,
+            scene: Example,
+            physics: {
+                default: 'arcade',
+                arcade: {
+                    gravity: { y: 600 },
+                    debug: false,
+                },
+            },
+        };
+
+        // Initialiser le jeu Phaser
+        gameRef.current = new Phaser.Game(config);
+
+        // Gérer le redimensionnement
+        const handleResize = () => {
+            const { width, height } = calculateGameSize();
+            if (gameRef.current) {
+                gameRef.current.scale.resize(width, height);
+            }
+        };
+
+        window.addEventListener('resize', handleResize);
+
+        // Nettoyage lors du démontage du composant
+        return () => {
+            if (gameRef.current) {
+                gameRef.current.destroy(true); // Détruit le jeu proprement
+                gameRef.current = null;
+            }
+            window.removeEventListener('resize', handleResize);
+        };
+    }, []);
+
+    return <div id="phaser-container"></div>;
 }
 
 export default Home;
