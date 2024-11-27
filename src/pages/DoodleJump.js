@@ -317,27 +317,23 @@ class Example extends Phaser.Scene {
             player.setVelocityY(-650);
         }
 
-        if (cursors.left.isDown) {
-            player.setVelocityX(this.isControlsReversed ? 260 : -260); // Commandes inversées
-            player.anims.play('left', true);
-        } else if (cursors.right.isDown) {
-            player.setVelocityX(this.isControlsReversed ? -260 : 260); // Commandes inversées
-            player.anims.play('right', true);
-        } else {
-            player.setVelocityX(0);
-            player.anims.play('turn');
-        }
-
-        if (this.isLeftPressed) {
+        // Mise à jour des contrôles dans update
+        if (this.isLeftPressed || (cursors.left.isDown && !this.isRightPressed)) {
             player.setVelocityX(this.isControlsReversed ? 260 : -260);
             player.anims.play('left', true);
-        } else if (this.isRightPressed) {
+        } else if (this.isRightPressed || (cursors.right.isDown && !this.isLeftPressed)) {
             player.setVelocityX(this.isControlsReversed ? -260 : 260);
             player.anims.play('right', true);
         } else {
             player.setVelocityX(0);
             player.anims.play('turn');
         }
+
+        // Gestion du saut
+        if ((this.isJumpPressed || cursors.up.isDown) && player.body.touching.down && !player.isBoosting) {
+            player.setVelocityY(-650);
+        }
+
 
         if (player.y < maxY) {
             maxY = player.y;
