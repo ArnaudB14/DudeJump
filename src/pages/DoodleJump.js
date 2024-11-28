@@ -712,7 +712,12 @@ class Example extends Phaser.Scene {
             // Première activation des commandes inversées
             this.isSpeedBoosted = true;
 
-            if (this.isDifficultyIncreased && this.isDifficultyIncreased2 && !this.isDifficultyIncreased3) {
+            if (this.isDifficultyIncreased && !this.isDifficultyIncreased2 && !this.isDifficultyIncreased3) {
+                normalSpeed = 520;
+                normalJump = -950;
+    
+                this.physics.world.gravity.y = 1000;
+            } else if (this.isDifficultyIncreased && this.isDifficultyIncreased2 && !this.isDifficultyIncreased3) {
                 normalSpeed = 720;
                 normalJump = -1150;
     
@@ -723,10 +728,10 @@ class Example extends Phaser.Scene {
     
                 this.physics.world.gravity.y = 1400;
             } else {
-                normalSpeed = 520;
-                normalJump = -950;
+                normalSpeed = 420;
+                normalJump = -850;
     
-                this.physics.world.gravity.y = 1000;
+                this.physics.world.gravity.y = 9000;
             }
 
             // Ajoute un texte centré en haut
