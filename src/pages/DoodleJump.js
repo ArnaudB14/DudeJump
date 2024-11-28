@@ -314,6 +314,7 @@ class Example extends Phaser.Scene {
                 this.isDifficultyIncreased = false;
                 this.isDifficultyIncreased2 = false;
                 this.isDifficultyIncreased3 = false;
+                this.heightScore = 0;
             });
 
 
