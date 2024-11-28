@@ -309,6 +309,9 @@ class Example extends Phaser.Scene {
                 normalSpeed = 260;
                 normalJump = -650;
                 this.physics.world.gravity.y = normalGravity;
+                this.isDifficultyIncreased = false;
+                this.isDifficultyIncreased2 = false;
+                this.isDifficultyIncreased3 = false;
             });
 
 
