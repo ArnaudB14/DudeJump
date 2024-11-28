@@ -12,6 +12,12 @@ var gameOver;
 var boosts;
 var stars;
 var bonusScore = 0;
+var normalSpeed = 260; // Vitesse par défaut
+var boostedSpeed = 520; // Vitesse augmentée
+var normalJump = -650; // Hauteur de saut normale
+var boostedJump = -950;
+var normalGravity = 600; // Gravité par défaut
+var boostedGravity = 1000;
 
 class Example extends Phaser.Scene {
 
@@ -25,6 +31,7 @@ class Example extends Phaser.Scene {
         this.load.image('sky', 'assets/sky.png');
         this.load.image('ground', 'assets/platform.png');
         this.load.image('ground_trap', 'assets/platform_trap.png');
+        this.load.image('ground_speed', 'assets/platform_speed.png');
         this.load.spritesheet('dude',
             'assets/player.png',
             { frameWidth: 32, frameHeight: 32 }
@@ -62,6 +69,8 @@ class Example extends Phaser.Scene {
         gameOver = false;
 
         this.isControlsReversed = false;
+        this.physics.world.gravity.y = normalGravity;
+        this.isSpeedBoosted = false;
 
         // Arrière-plan ajusté pour la nouvelle taille
         this.add.image(this.scale.width / 2, this.scale.height / 2, 'sky')
@@ -198,7 +207,6 @@ class Example extends Phaser.Scene {
         // Button mobile
         this.isLeftPressed = false;
         this.isRightPressed = false;
-        this.isJumpPressed = false;
 
         const leftButton = this.add.image(75, this.scale.height - 50, 'arrow')
             .setInteractive()
@@ -458,30 +466,38 @@ class Example extends Phaser.Scene {
                     platform.setData('star', null);
                 }
 
-                // Ajouter un boost avec une probabilité de 5 %
-                if (Phaser.Math.Between(1, 100) <= 1) {
-                    const boost = boosts.create(platform.x, platform.y - 45, 'jump');
-                    boost.setScale(1.5);
-                    boost.body.allowGravity = false;
-                    boost.body.immovable = true;
+                platform.setData('isTrap', false);
+                platform.setData('isSpeed', false);
+                platform.setTexture('ground');
 
-                    platform.setData('boost', boost);
-                }
-
-                if (Phaser.Math.Between(1, 100) <= 1) {
-                    const star = stars.create(platform.x, platform.y - 35, 'star');
-                    star.body.allowGravity = false;
-                    star.body.immovable = true;
-
-                    platform.setData('star', star);
-                }
-
-                if (Phaser.Math.Between(1, 100) <= 1) {
+                const isTrap = Phaser.Math.Between(1, 100) <= 2; // 3% de chance
+                const isSpeed = !isTrap && Phaser.Math.Between(1, 100) <= 2; // 3% de chance uniquement si pas "trap"
+        
+                if (isTrap) {
                     platform.setTexture('ground_trap');
                     platform.setData('isTrap', true);
-                } else {
-                    platform.setTexture('ground');
-                    platform.setData('isTrap', false);
+                } else if (isSpeed) {
+                    platform.setTexture('ground_speed');
+                    platform.setData('isSpeed', true);
+                }
+                
+                if (!isTrap && !isSpeed) {
+                    if (Phaser.Math.Between(1, 100) <= 3) {
+                        const boost = boosts.create(platform.x, platform.y - 45, 'jump');
+                        boost.setScale(1.5);
+                        boost.body.allowGravity = false;
+                        boost.body.immovable = true;
+        
+                        platform.setData('boost', boost);
+                    }
+        
+                    if (Phaser.Math.Between(1, 100) <= 5) {
+                        const star = stars.create(platform.x, platform.y - 35, 'star');
+                        star.body.allowGravity = false;
+                        star.body.immovable = true;
+        
+                        platform.setData('star', star);
+                    }
                 }
 
                 // Mettre à jour la dernière plateforme
@@ -506,20 +522,24 @@ class Example extends Phaser.Scene {
 
         // Mise à jour des contrôles dans update
         if (this.isLeftPressed || (cursors.left.isDown && !this.isRightPressed)) {
-            player.setVelocityX(this.isControlsReversed ? 260 : -260);
+            player.setVelocityX(this.isControlsReversed ? normalSpeed : -normalSpeed);
             player.anims.play('left', true);
         } else if (this.isRightPressed || (cursors.right.isDown && !this.isLeftPressed)) {
-            player.setVelocityX(this.isControlsReversed ? -260 : 260);
+            player.setVelocityX(this.isControlsReversed ? -normalSpeed : normalSpeed);
             player.anims.play('right', true);
         } else {
             player.setVelocityX(0);
             player.anims.play('turn'); // Appelle la version correcte selon l'apparence
         }
+           
 
         // Gestion du saut
-        if ((this.isJumpPressed || cursors.up.isDown) && player.body.touching.down && !player.isBoosting) {
-            player.setVelocityY(-650);
+        if (player.body.touching.down && !player.isBoosting) {
+            console.log('Jump Velocity:', normalJump); 
+            console.log('Current Gravity:', this.physics.world.gravity.y);
+            player.setVelocityY(normalJump);
         }
+        
 
 
         if (player.y < maxY) {
@@ -567,26 +587,74 @@ class Example extends Phaser.Scene {
     checkPlatform(player, platform) {
         if (platform.getData('isTrap')) {
             this.activateTrapEffect();
+        } 
+        if (platform.getData('isSpeed')) {
+            this.activateSpeedEffect();
         }
     }
 
     activateTrapEffect() {
         const effectDuration = 5; // Durée en secondes
-        let countdown = effectDuration;
+        let countdownTrap = effectDuration;
 
         // Si les commandes sont déjà inversées
         if (this.isControlsReversed) {
             // Réinitialise le décompte et le texte existant
-            this.countdownEvent.remove(); // Supprime l'ancien événement
-            this.trapText.setText(`Contrôles inversés ! : ${countdown}`); // Remet le texte à jour
+            this.countdownEventTrap.remove(); // Supprime l'ancien événement
+            this.trapText.setText(`Contrôles inversés ! : ${countdownTrap}`); // Remet le texte à jour
         } else {
             // Première activation des commandes inversées
             this.isControlsReversed = true;
 
             // Ajoute un texte centré en haut
-            this.trapText = this.add.text(this.cameras.main.centerX, 100, `Contrôles inversés ! : ${countdown}`, {
+            this.trapText = this.add.text(this.cameras.main.centerX, 100, `Contrôles inversés ! : ${countdownTrap}`, {
                 fontSize: '22px',
-                fill: '#ff0000',
+                fill: '#000',
+                align: 'center',
+                padding: { x: 10, y: 5 },
+            }).setOrigin(0.5).setScrollFactor(0);
+        }
+
+        // Crée un événement pour le décompte
+        this.countdownEventTrap = this.time.addEvent({
+            delay: 1000, // Répète toutes les secondes
+            callback: () => {
+                countdownTrap--; // Diminue le décompte
+                this.trapText.setText(`Contrôles inversés ! : ${countdownTrap}`); // Met à jour le texte
+
+                // Si le décompte atteint 0, arrête l'effet
+                if (countdownTrap <= 0) {
+                    this.countdownEventTrap.remove(); // Supprime l'événement
+                    this.trapText.destroy(); // Supprime le texte
+                    this.isControlsReversed = false; // Réinitialise les commandes
+                }
+            },
+            loop: true, // Répète l'événement
+        });
+    }
+
+    activateSpeedEffect() {
+        const effectDuration = 5; // Durée en secondes
+        let countdown = effectDuration;
+
+        // Si les commandes sont déjà inversées
+        if (this.isSpeedBoosted) {
+            // Réinitialise le décompte et le texte existant
+            this.countdownEvent.remove(); // Supprime l'ancien événement
+            this.speedText.setText(`Vitesse augmentée ! : ${countdown}`); // Remet le texte à jour
+        } else {
+            // Première activation des commandes inversées
+            this.isSpeedBoosted = true;
+
+            normalSpeed = boostedSpeed;
+            normalJump = boostedJump;
+
+            this.physics.world.gravity.y = boostedGravity;
+
+            // Ajoute un texte centré en haut
+            this.speedText = this.add.text(this.cameras.main.centerX, 150, `Vitesse augmentée ! : ${countdown}`, {
+                fontSize: '22px',
+                fill: '#000',
                 align: 'center',
                 padding: { x: 10, y: 5 },
             }).setOrigin(0.5).setScrollFactor(0);
@@ -597,20 +665,21 @@ class Example extends Phaser.Scene {
             delay: 1000, // Répète toutes les secondes
             callback: () => {
                 countdown--; // Diminue le décompte
-                this.trapText.setText(`Contrôles inversés ! : ${countdown}`); // Met à jour le texte
+                this.speedText.setText(`Vitesse augmentée ! : ${countdown}`); // Met à jour le texte
 
                 // Si le décompte atteint 0, arrête l'effet
                 if (countdown <= 0) {
                     this.countdownEvent.remove(); // Supprime l'événement
-                    this.trapText.destroy(); // Supprime le texte
-                    this.isControlsReversed = false; // Réinitialise les commandes
+                    this.speedText.destroy(); // Supprime le texte
+                    normalSpeed = 260;
+                    normalJump = -650;
+                    this.physics.world.gravity.y = normalGravity;
+                    this.isSpeedBoosted = false; // Réinitialise les commandes
                 }
             },
             loop: true, // Répète l'événement
         });
     }
-
-
 
     hitBoost(player, boost) {
         player.setVelocityY(-1300); // Augmenter la hauteur du saut
