@@ -286,7 +286,7 @@ class Example extends Phaser.Scene {
 
             // Bouton "Restart"
             const restartButton = this.add
-                .text(this.scale.width / 2, this.scale.height / 2 + 150, 'Restart', {
+                .text(this.scale.width / 2, this.scale.height / 2 + 150, 'Rééssayer', {
                     fontSize: `${this.scale.width / 15}px`, // Taille de police adaptative
                     fill: '#fff',
                     backgroundColor: '#000',
