@@ -1,6 +1,5 @@
 import React from 'react'
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
-import FirstGame from './pages/FirstGame'
 import DoodleJump from './pages/DoodleJump'
 
 const App = () => {

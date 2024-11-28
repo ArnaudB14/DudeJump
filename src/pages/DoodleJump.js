@@ -13,11 +13,8 @@ var boosts;
 var stars;
 var bonusScore = 0;
 var normalSpeed = 260; // Vitesse par défaut
-var boostedSpeed = 520; // Vitesse augmentée
 var normalJump = -650; // Hauteur de saut normale
-var boostedJump = -950;
 var normalGravity = 600; // Gravité par défaut
-var boostedGravity = 1000;
 
 class Example extends Phaser.Scene {
 
@@ -549,6 +546,75 @@ class Example extends Phaser.Scene {
             scoreText.setText('Score: ' + score);
         }
 
+        if (score >= 2000 && !this.isDifficultyIncreased) {
+            this.isDifficultyIncreased = true; // Flag pour éviter une réaugmentation
+            normalSpeed = 350; // Augmente la vitesse
+            normalJump = -750; // Augmente la hauteur de saut
+            this.physics.world.gravity.y = 800; // Augmente la gravité
+    
+            // Ajout d'un message visuel pour indiquer le changement
+            const difficultyText = this.add.text(
+                this.cameras.main.centerX,
+                100,
+                'Difficulté augmentée !',
+                {
+                    fontSize: '30px',
+                    fill: '#000',
+                    align: 'center',
+                }
+            ).setOrigin(0.5).setScrollFactor(0);
+    
+            this.time.delayedCall(2000, () => {
+                difficultyText.destroy(); // Supprime le message après 2 secondes
+            });
+        }
+
+        if (score >= 3000 && this.isDifficultyIncreased && !this.isDifficultyIncreased2) {
+            this.isDifficultyIncreased2 = true; // Flag pour éviter une réaugmentation
+            normalSpeed = 520; // Augmente la vitesse
+            normalJump = -950; // Augmente la hauteur de saut
+            this.physics.world.gravity.y = 1000; // Augmente la gravité
+    
+            // Ajout d'un message visuel pour indiquer le changement
+            const difficultyText2 = this.add.text(
+                this.cameras.main.centerX,
+                100,
+                'Difficulté augmentée !',
+                {
+                    fontSize: '30px',
+                    fill: '#000',
+                    align: 'center',
+                }
+            ).setOrigin(0.5).setScrollFactor(0);
+    
+            this.time.delayedCall(2000, () => {
+                difficultyText2.destroy(); // Supprime le message après 2 secondes
+            });
+        }
+
+        if (score >= 4000 && this.isDifficultyIncreased && this.isDifficultyIncreased2 && !this.isDifficultyIncreased3) {
+            this.isDifficultyIncreased3 = true; // Flag pour éviter une réaugmentation
+            normalSpeed = 720;
+            normalJump = -1150;
+            this.physics.world.gravity.y = 1200;
+
+            // Ajout d'un message visuel pour indiquer le changement
+            const difficultyText2 = this.add.text(
+                this.cameras.main.centerX,
+                100,
+                'Difficulté augmentée !',
+                {
+                    fontSize: '30px',
+                    fill: '#000',
+                    align: 'center',
+                }
+            ).setOrigin(0.5).setScrollFactor(0);
+    
+            this.time.delayedCall(2000, () => {
+                difficultyText2.destroy(); // Supprime le message après 2 secondes
+            });
+        }
+
         if (this.currentAppearance === 'dude') {
             if (player.body.velocity.y > 50) { // Si le joueur tombe
                 this.fallImage.setVisible(true);
@@ -646,10 +712,22 @@ class Example extends Phaser.Scene {
             // Première activation des commandes inversées
             this.isSpeedBoosted = true;
 
-            normalSpeed = boostedSpeed;
-            normalJump = boostedJump;
-
-            this.physics.world.gravity.y = boostedGravity;
+            if (this.isDifficultyIncreased && this.isDifficultyIncreased2 && !this.isDifficultyIncreased3) {
+                normalSpeed = 720;
+                normalJump = -1150;
+    
+                this.physics.world.gravity.y = 1200;
+            } else if(this.isDifficultyIncreased && this.isDifficultyIncreased2 && this.isDifficultyIncreased3) {
+                normalSpeed = 920;
+                normalJump = -1350;
+    
+                this.physics.world.gravity.y = 1400;
+            } else {
+                normalSpeed = 520;
+                normalJump = -950;
+    
+                this.physics.world.gravity.y = 1000;
+            }
 
             // Ajoute un texte centré en haut
             this.speedText = this.add.text(this.cameras.main.centerX, 150, `Vitesse augmentée ! : ${countdown}`, {
@@ -671,9 +749,23 @@ class Example extends Phaser.Scene {
                 if (countdown <= 0) {
                     this.countdownEvent.remove(); // Supprime l'événement
                     this.speedText.destroy(); // Supprime le texte
-                    normalSpeed = 260;
-                    normalJump = -650;
-                    this.physics.world.gravity.y = normalGravity;
+                    if (this.isDifficultyIncreased && !this.isDifficultyIncreased2 && !this.isDifficultyIncreased3) {
+                        normalSpeed = 350;
+                        normalJump = -750;
+                        this.physics.world.gravity.y = 800;
+                    } else if (this.isDifficultyIncreased && this.isDifficultyIncreased2 && !this.isDifficultyIncreased3) {
+                        normalSpeed = 520;
+                        normalJump = -950;
+                        this.physics.world.gravity.y = 1000; 
+                    } else if (this.isDifficultyIncreased && this.isDifficultyIncreased2 && this.isDifficultyIncreased3) {
+                        normalSpeed = 720;
+                        normalJump = -1150;
+                        this.physics.world.gravity.y = 1200;
+                    } else {
+                        normalSpeed = 260;
+                        normalJump = -650;
+                        this.physics.world.gravity.y = normalGravity;
+                    }
                     this.isSpeedBoosted = false; // Réinitialise les commandes
                 }
             },
