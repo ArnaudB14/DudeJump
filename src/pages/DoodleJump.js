@@ -306,6 +306,9 @@ class Example extends Phaser.Scene {
                 this.scene.restart({ appearance: this.currentAppearance });
                 score = 0;
                 gameOver = false;
+                normalSpeed = 260;
+                normalJump = -650;
+                this.physics.world.gravity.y = normalGravity;
             });
 
 
@@ -731,7 +734,7 @@ class Example extends Phaser.Scene {
                 normalSpeed = 420;
                 normalJump = -850;
     
-                this.physics.world.gravity.y = 9000;
+                this.physics.world.gravity.y = 900;
             }
 
             // Ajoute un texte centré en haut
