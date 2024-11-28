@@ -308,6 +308,8 @@ class Example extends Phaser.Scene {
                 gameOver = false;
                 normalSpeed = 260;
                 normalJump = -650;
+                this.isSpeedBoosted = false;
+                this.isControlsReversed = false;
                 this.physics.world.gravity.y = normalGravity;
                 this.isDifficultyIncreased = false;
                 this.isDifficultyIncreased2 = false;
