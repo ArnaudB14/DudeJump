@@ -1,6 +1,5 @@
 import React, { useEffect, useRef } from 'react';
 import Phaser from 'phaser';
-import GameComponent from '../components/GameComponent';
 
 var platforms;
 var player;
@@ -477,8 +476,8 @@ class Example extends Phaser.Scene {
                 platform.setData('isSpeed', false);
                 platform.setTexture('ground');
 
-                const isTrap = Phaser.Math.Between(1, 100) <= 2; // 3% de chance
-                const isSpeed = !isTrap && Phaser.Math.Between(1, 100) <= 2; // 3% de chance uniquement si pas "trap"
+                const isTrap = Phaser.Math.Between(1, 100) <= 3; // 3% de chance
+                const isSpeed = Phaser.Math.Between(1, 100) <= 3; // 3% de chance uniquement si pas "trap"
         
                 if (isTrap) {
                     platform.setTexture('ground_trap');
@@ -498,7 +497,7 @@ class Example extends Phaser.Scene {
                         platform.setData('boost', boost);
                     }
         
-                    if (Phaser.Math.Between(1, 100) <= 5) {
+                    if (Phaser.Math.Between(1, 100) <= 6) {
                         const star = stars.create(platform.x, platform.y - 35, 'star');
                         star.body.allowGravity = false;
                         star.body.immovable = true;
@@ -542,8 +541,6 @@ class Example extends Phaser.Scene {
 
         // Gestion du saut
         if (player.body.touching.down && !player.isBoosting) {
-            console.log('Jump Velocity:', normalJump); 
-            console.log('Current Gravity:', this.physics.world.gravity.y);
             player.setVelocityY(normalJump);
         }
         
@@ -565,10 +562,10 @@ class Example extends Phaser.Scene {
             // Ajout d'un message visuel pour indiquer le changement
             const difficultyText = this.add.text(
                 this.cameras.main.centerX,
-                100,
+                150,
                 'Difficulté augmentée !',
                 {
-                    fontSize: '30px',
+                    fontSize: `${this.scale.width / 20}px`,
                     fill: '#000',
                     align: 'center',
                 }
@@ -588,10 +585,10 @@ class Example extends Phaser.Scene {
             // Ajout d'un message visuel pour indiquer le changement
             const difficultyText2 = this.add.text(
                 this.cameras.main.centerX,
-                100,
+                150,
                 'Difficulté augmentée !',
                 {
-                    fontSize: '30px',
+                    fontSize: `${this.scale.width / 20}px`,
                     fill: '#000',
                     align: 'center',
                 }
@@ -611,10 +608,10 @@ class Example extends Phaser.Scene {
             // Ajout d'un message visuel pour indiquer le changement
             const difficultyText2 = this.add.text(
                 this.cameras.main.centerX,
-                100,
+                150,
                 'Difficulté augmentée !',
                 {
-                    fontSize: '30px',
+                    fontSize: `${this.scale.width / 20}px`,
                     fill: '#000',
                     align: 'center',
                 }
@@ -684,7 +681,7 @@ class Example extends Phaser.Scene {
 
             // Ajoute un texte centré en haut
             this.trapText = this.add.text(this.cameras.main.centerX, 100, `Contrôles inversés ! : ${countdownTrap}`, {
-                fontSize: '22px',
+                fontSize: `${this.scale.width / 20}px`,
                 fill: '#000',
                 align: 'center',
                 padding: { x: 10, y: 5 },
@@ -746,7 +743,7 @@ class Example extends Phaser.Scene {
 
             // Ajoute un texte centré en haut
             this.speedText = this.add.text(this.cameras.main.centerX, 150, `Vitesse augmentée ! : ${countdown}`, {
-                fontSize: '22px',
+                fontSize: `${this.scale.width / 20}px`,
                 fill: '#000',
                 align: 'center',
                 padding: { x: 10, y: 5 },
